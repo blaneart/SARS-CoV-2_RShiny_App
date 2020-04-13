@@ -1,18 +1,11 @@
 library(shiny)
-
-
-ui <- fluidPage(tabsetPanel(
-  tabPanel(title = "GC content",
-  plotOutput("GC")), 
-  tabPanel(title = "Amino Acid Table",
-           DT::dataTableOutput("AA")), 
-  tabPanel(title = "Protein Weights",
-           plotOutput("PW"))))
+library(seqinr)
+library(Biostrings)
+library(protr)
+library(Peptides)
 
 server <- function(input, output){
   output$GC <- renderPlot({
-    library(seqinr)
-    library(Biostrings)
     dengue <- read.fasta("./cov.fna")
     dengueseq <- dengue[[1]]
     
@@ -28,15 +21,14 @@ server <- function(input, output){
     
     #"starts", but just containing zeroes
     title <- "Sliding window plot of GC content"
-
+    
     plot(starts,chunkGCs,type="b",main = title, xlab="Nucleotide start position",ylab="GC content")
-    })
+  })
   output$AA <- DT::renderDataTable({
-    library(seqinr)
-    library(Biostrings)
+
     dengue <- read.fasta("./cov.fna")
     dengueseq <- dengue[[1]]
-    amin_acid <- translate(dengueseq)
+    amin_acid <- seqinr::translate(dengueseq)
     str <- NULL
     df <- read.table(text = "", colClasses = c("character", "integer"),
                      col.names = c("sequence", "length"))
@@ -55,13 +47,10 @@ server <- function(input, output){
     df
   })
   output$PW <- renderPlot({
-    library(seqinr)
-    library(Biostrings)
-    library(protr)
-    
+
     dengue <- read.fasta("./cov.fna")
     dengueseq <- dengue[[1]]
-    amin_acid <- translate(dengueseq)
+    amin_acid <- seqinr::translate(dengueseq)
     str <- NULL
     df <- read.table(text = "", colClasses = c("character", "integer"),
                      col.names = c("sequence", "length"))
@@ -78,7 +67,7 @@ server <- function(input, output){
     df <- subset(df, !(df$length < 20))
     rownames(df) <- 1:nrow(df)
     weight <- read.table(text = "", colClasses = c("double"),
-                     col.names = c("weight"))
+                         col.names = c("weight"))
     for (i in 1:length(df$sequence))
       weight[nrow(weight) + 1,] = c(mw(seq = df[i,1], monoisotopic = FALSE))
     hist(weight$weight, breaks = 80, col = "#75AADB", border = "white",
@@ -86,5 +75,3 @@ server <- function(input, output){
          main = "Distribution of molecular weight")
   })
 }
-
-shinyApp(ui = ui, server = server)
